@@ -2,6 +2,7 @@
 
 return [
 
+//'frontend_url' => env('FRONTEND_URL', 'https://beerspots.pl'),
     /*
     |--------------------------------------------------------------------------
     | Application Name
