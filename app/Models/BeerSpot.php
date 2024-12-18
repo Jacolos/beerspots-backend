@@ -102,4 +102,16 @@ protected $fillable = [
     {
         return $this->beers()->max('price');
     }
+
+public function reports()
+{
+    return $this->hasMany(Report::class);
+}
+
+public function favoriteUsers()
+{
+    return $this->belongsToMany(User::class, 'favorite_spots')
+                ->withTimestamps();
+}
+
 }

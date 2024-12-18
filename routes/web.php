@@ -2,8 +2,9 @@
 
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\BeerSpotController as AdminBeerSpotController;
-use App\Http\Controllers\Admin\BeerController as AdminBeerController;
+use App\Http\Controllers\Admin\BeerController;
 use App\Http\Controllers\Admin\ReviewController as AdminReviewController;
+use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\ProfileController;
@@ -55,8 +56,18 @@ Route::prefix('admin')->middleware(['auth', AdminMiddleware::class])->group(func
     Route::post('beer-spots/{beerSpot}/unverify', [AdminBeerSpotController::class, 'unverify'])
         ->name('admin.beer-spots.unverify');
     
-    // Zarządzanie piwami
-    Route::resource('beers', AdminBeerController::class)->names('admin.beers');
+    // Beer bulk actions
+    Route::prefix('beers')->group(function () {
+        Route::delete('/bulk-destroy', [BeerController::class, 'bulkDestroy'])
+            ->name('admin.beers.bulk-destroy');
+        Route::put('/bulk-status/{action}', [BeerController::class, 'bulkUpdateStatus'])
+            ->name('admin.beers.bulk-status')
+            ->where('action', 'makeAvailable|makeUnavailable');
+    });
+
+    // Regular beer resource routes
+    Route::resource('beers', BeerController::class)->names('admin.beers');
+
     
     // Reviews bulk actions
     Route::post('reviews/bulk/{action}', [AdminReviewController::class, 'bulk'])
@@ -70,6 +81,11 @@ Route::prefix('admin')->middleware(['auth', AdminMiddleware::class])->group(func
     Route::post('reviews/{review}/reject', [AdminReviewController::class, 'reject'])
         ->name('admin.reviews.reject');
     
+
+    Route::resource('reports', ReportController::class)->names('admin.reports');;
+   Route::post('reports/bulk', [ReportController::class, 'bulkUpdate'])->name('admin.reports.bulk-update');
+
+
     // Zarządzanie użytkownikami
     Route::resource('users', UserController::class)->names('admin.users');
     

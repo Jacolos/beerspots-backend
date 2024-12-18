@@ -63,14 +63,26 @@ class ReviewController extends Controller
             'visit_date' => 'required|date'
         ]);
 
+
+    $existingReview = $beerSpot->reviews()
+        ->where('user_id', auth()->id())
+        ->first();
+
+    if ($existingReview) {
+        return response()->json([
+            'message' => 'Już wystawiłeś opinie w tej lokalizacji, jeśli jeszcze jej nie ma, poczekać na akceptacje.'
+        ], 400);
+    }
+
+
         $review = $beerSpot->reviews()->create($validated + [
             'user_id' => auth()->id(),
             'status' => 'pending'
         ]);
         
     	// Powiadom wszystkich adminów
-    	$admins = User::role('admin')->get();
-    	Notification::send($admins, new NewReviewNotification($review));
+    	//$admins = User::role('admin')->get();
+    	//Notification::send($admins, new NewReviewNotification($review));
 
         return response()->json([
             'data' => $review,

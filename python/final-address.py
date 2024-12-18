@@ -188,49 +188,88 @@ def check_venue_exists(venue_name: str) -> Tuple[bool, Dict]:
                     return True, venue
     return False, {}
 
-def update_beer_spot_status(venue_name: str, status: str = 'inactive') -> bool:
-    """Update status of a beer spot"""
-    exists, venue = check_venue_exists(venue_name)
-    if exists and venue.get('id'):
-        update_response = requests.put(
-            f"{API_BASE_URL}/beer-spots/{venue['id']}",
-            headers=HEADERS,
-            json={
-                'status': status,
-                'verified': False
-            }
-        )
-        return update_response.status_code == 200
-    return False
-
 def check_venue_exists(venue_name: str, latitude: float = None, longitude: float = None) -> Tuple[bool, Dict]:
     """Check if venue exists by name and coordinates"""
-    response = requests.get(
-        f"{API_BASE_URL}/beer-spots",
-        headers=HEADERS
-    )
-    
-    if response.status_code == 200:
+    try:
+        response = requests.get(
+            f"{API_BASE_URL}/beer-spots",
+            headers=HEADERS,
+            params={'search': venue_name}  # Add search parameter
+        )
+        
+        if response.status_code != 200:
+            print_progress(f"API request failed with status code: {response.status_code}")
+            return False, {}
+
         venues_data = response.json()
-        if 'data' in venues_data and 'data' in venues_data['data']:
-            venues = venues_data['data']['data']
-            for venue in venues:
-                # Sprawdź czy nazwa się zgadza
-                if venue.get('name') != venue_name:
-                    continue
-                    
-                # Jeśli podano koordynaty, sprawdź czy są zbliżone
+        if not venues_data.get('data'):
+            return False, {}
+            
+        venues = venues_data['data'].get('data', [])
+        print_progress(f"Found {len(venues)} potential matches for: {venue_name}")
+            
+        for venue in venues:
+            if not isinstance(venue, dict):
+                continue
+                
+            if venue.get('name') == venue_name:
                 if latitude is not None and longitude is not None:
                     venue_lat = float(venue.get('latitude', 0))
                     venue_lon = float(venue.get('longitude', 0))
                     
-                    # Sprawdź czy koordynaty są w promieniu ~100m
                     if (abs(venue_lat - latitude) < 0.001 and 
                         abs(venue_lon - longitude) < 0.001):
+                        print_progress(f"Found matching venue with coordinates")
                         return True, venue
                 else:
+                    print_progress(f"Found matching venue by name")
                     return True, venue
+                    
+        print_progress(f"No matching venue found for: {venue_name}")
+                
+    except Exception as e:
+        print_progress(f"Error checking venue existence: {str(e)}")
+        import traceback
+        print_progress(f"Traceback: {traceback.format_exc()}")
+        
     return False, {}
+
+def update_beer_spot_status(venue_name: str, status: str = 'inactive') -> bool:
+    """Update status of a beer spot"""
+    try:
+        exists, venue = check_venue_exists(venue_name)
+        if not exists:
+            print_progress(f"Venue not found: {venue_name}")
+            return False
+            
+        if not venue.get('id'):
+            print_progress(f"Venue found but no ID present: {venue_name}")
+            return False
+
+        print_progress(f"Updating venue {venue_name} (ID: {venue['id']}) to status: {status}")
+
+        # Use the dedicated status update endpoint
+        update_data = {
+            'status': status,
+            'verified': False
+        }
+
+        update_response = requests.put(
+            f"{API_BASE_URL}/beer-spots/{venue['id']}/update-status",
+            headers=HEADERS,
+            json=update_data
+        )
+                
+        if update_response.status_code != 200:
+            print_progress(f"Update failed with status code: {update_response.status_code}")
+            return False
+            
+        print_progress(f"Successfully updated venue status: {venue_name}")
+        return True
+        
+    except Exception as e:
+        print_progress(f"Error updating venue status: {str(e)}")
+        return False
 
 def get_address_from_coords(latitude: float, longitude: float) -> str:
     """Get address from coordinates using Nominatim"""

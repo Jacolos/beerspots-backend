@@ -5,6 +5,8 @@ use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\BeerSpotController;
 use App\Http\Controllers\API\BeerController;
 use App\Http\Controllers\API\ReviewController;
+use App\Http\Controllers\API\ReportController;
+use App\Http\Controllers\API\FavoriteSpotController;
 use Illuminate\Support\Facades\Route;
 
 // Trasy publiczne
@@ -39,6 +41,20 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('reviews/{review}', [ReviewController::class, 'update']);
     Route::delete('reviews/{review}', [ReviewController::class, 'destroy']);
     
+    // Reports
+    Route::middleware(['auth:sanctum', 'throttle:reports'])->group(function () {
+        Route::post('reports', [ReportController::class, 'store']);
+    });
+    Route::get('beer-spots/{beerSpot}/reports', [ReportController::class, 'index']);
+    Route::get('reports/{report}', [ReportController::class, 'show']);
+    Route::put('reports/{report}', [ReportController::class, 'update']);
+    Route::delete('reports/{report}', [ReportController::class, 'destroy']);
+
+
+    Route::get('favorites', [FavoriteSpotController::class, 'index']);
+    Route::post('favorites/{beerSpot}', [FavoriteSpotController::class, 'toggle']);
+    Route::get('favorites/{beerSpot}/check', [FavoriteSpotController::class, 'check']);
+
     // Profil użytkownika
     Route::get('profile', [AuthController::class, 'profile']);
     Route::post('auth/logout', [AuthController::class, 'logout']);

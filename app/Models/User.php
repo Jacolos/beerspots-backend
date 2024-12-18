@@ -46,4 +46,15 @@ class User extends Authenticatable
             ->where('beer_spot_id', $beerSpotId)
             ->exists();
     }
+
+
+public function reports()
+{
+    return $this->hasMany(Report::class);
+}
+public function favoriteSpots()
+{
+    return $this->belongsToMany(BeerSpot::class, 'favorite_spots')
+                ->withTimestamps();
+}
 }

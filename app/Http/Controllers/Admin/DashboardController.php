@@ -7,6 +7,7 @@ use App\Models\BeerSpot;
 use App\Models\Beer;
 use App\Models\Review;
 use App\Models\User;
+use App\Models\Report;
 use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
@@ -42,6 +43,11 @@ class DashboardController extends Controller
             'latest_users' => User::latest()
                 ->take(5)
                 ->get(),
+            'latest_reports' => Report::with(['user', 'beerSpot'])
+                ->latest()
+                ->take(5)
+                ->get(),
+
                 
             // Monthly statistics
             'monthly_reviews' => Review::selectRaw('COUNT(*) as count, MONTH(created_at) as month')
@@ -57,6 +63,16 @@ class DashboardController extends Controller
                 ->orderBy('month')
                 ->pluck('count', 'month')
                 ->toArray(),
+
+            // Reports statistics
+            'total_reports' => Report::count(),
+            'pending_reports' => Report::where('status', 'pending')->count(),
+            'resolved_reports' => Report::where('status', 'resolved')->count(),
+            'recent_reports' => Report::with(['user', 'beerSpot'])
+                ->where('created_at', '>=', now()->subDays(7))
+                ->count(),
+            
+
         ];
 
         return view('admin.dashboard', compact('stats'));

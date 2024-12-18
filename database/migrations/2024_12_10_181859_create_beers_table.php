@@ -1,5 +1,4 @@
 <?php
-
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -16,7 +15,7 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->string('type')->nullable();
             $table->decimal('alcohol_percentage', 4, 2)->nullable();
-            $table->enum('status', ['available', 'unavailable'])->default('available');
+            $table->enum('status', ['pending', 'available', 'unavailable'])->default('pending');
             $table->timestamps();
         });
     }

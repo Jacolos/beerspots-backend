@@ -114,7 +114,7 @@ public function nearbyWithBeers(Request $request)
             $query->where('status', 'available')
                   ->orderBy('price', 'asc');
         }])
-        ->limit(500)
+        ->limit(50000)
         ->get()
         ->map(function($spot) {
            // Determine if the spot is currently open
@@ -190,18 +190,27 @@ public function nearbyWithBeers(Request $request)
 
     public function show(BeerSpot $beerSpot)
     {
-        return response()->json([
-            'data' => $beerSpot->load([
-                'beers' => function($query) {
-                    $query->where('status', 'available')
-                          ->orderBy('price', 'asc');
-                },
-                'reviews' => function($query) {
-                    $query->where('status', 'approved')
-                          ->with('user:id,name');
-                }
-            ])
-        ]);
+    $isFavorite = auth()->check() ? 
+        auth()->user()->favoriteSpots()->where('beer_spot_id', $beerSpot->id)->exists() : 
+        false;
+
+    $data = $beerSpot->load([
+        'beers' => function($query) {
+            $query->where('status', 'available')
+                  ->orderBy('price', 'asc');
+        },
+        'reviews' => function($query) {
+            $query->where('status', 'approved')
+                  ->with('user:id,name');
+        }
+    ]);
+    
+    $data = $data->toArray();
+    $data['is_favorite'] = $isFavorite;
+
+    return response()->json([
+        'data' => $data
+    ]);
     }
 
     public function store(Request $request)
@@ -220,8 +229,8 @@ public function nearbyWithBeers(Request $request)
             'verified' => false
         ]);
 
-        //$admins = User::role('admin')->get();
-        //Notification::send($admins, new NewBeerSpotNotification($beerSpot));
+        $admins = User::role('admin')->get();
+        Notification::send($admins, new NewBeerSpotNotification($beerSpot));
 
         return response()->json([
             'data' => $beerSpot,
